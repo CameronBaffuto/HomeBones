@@ -2,7 +2,6 @@
 import { computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useHomesStore } from "@/stores/useHomeStore";
 import { useSessionStore } from "@/stores/useSessionStore";
 
 import Button from "primevue/button";
@@ -12,7 +11,6 @@ import Message from "primevue/message";
 import SelectButton from "primevue/selectbutton";
 
 const auth = useAuthStore();
-const homes = useHomesStore();
 const session = useSessionStore();
 const router = useRouter();
 

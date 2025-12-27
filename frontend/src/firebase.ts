@@ -20,7 +20,7 @@ export const auth = getAuth(app);
 
 // Use initializeFirestore with cache settings to replace deprecated enableIndexedDbPersistence
 export const db = initializeFirestore(app, {
-  cache: persistentLocalCache({
+  localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager()
   })
 });

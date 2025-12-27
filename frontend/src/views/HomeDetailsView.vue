@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import AppLayout from "@/views/AppLayout.vue";
 import { useHomesStore } from "@/stores/useHomeStore";

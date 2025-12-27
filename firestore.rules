@@ -6,29 +6,23 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isHomeOwner(homeId) {
-      return signedIn()
-        && get(/databases/$(database)/documents/homes/$(homeId)).data.ownerId == request.auth.uid;
+    function isOwner(data) {
+      return signedIn() && data.ownerId == request.auth.uid;
     }
 
     match /homes/{homeId} {
       allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
-      allow read, update, delete: if signedIn() && resource.data.ownerId == request.auth.uid;
-
-      match /spaces/{spaceId} {
-        allow read, write: if isHomeOwner(homeId);
-      }
-
-      match /items/{itemId} {
-        allow read, write: if isHomeOwner(homeId);
-      }
+      allow read, update, delete: if isOwner(resource.data);
     }
 
-    match /ragDocs/{docId} {
-      allow read, write: if signedIn() && (
-        (resource != null && resource.data.uid == request.auth.uid) ||
-        (resource == null && request.resource.data.uid == request.auth.uid)
-      );
+    match /rooms/{roomId} {
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow read, update, delete: if isOwner(resource.data);
+    }
+
+    match /items/{itemId} {
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow read, update, delete: if isOwner(resource.data);
     }
 
     match /{document=**} {

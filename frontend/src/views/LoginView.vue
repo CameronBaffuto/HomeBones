@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useHomesStore } from "@/stores/useHomeStore";
 
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
@@ -10,6 +11,7 @@ import Message from "primevue/message";
 import SelectButton from "primevue/selectbutton";
 
 const auth = useAuthStore();
+const homes = useHomesStore();
 const router = useRouter();
 
 const modeOptions = [
@@ -23,9 +25,10 @@ const primaryLabel = computed(() => (auth.mode === "register" ? "Create account"
 async function onPrimaryClick() {
   try {
     await auth.submit();
+    await homes.ensureHome();
     router.replace({ name: "home" });
   } catch {
-    // error is already stored in auth.error
+    // auth store already sets auth.error
   }
 }
 </script>

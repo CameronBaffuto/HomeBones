@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import AppLayout from "@/views/AppLayout.vue";
 import { useHomesStore } from "@/stores/useHomeStore";
@@ -7,9 +7,11 @@ import Button from "primevue/button";
 import Card from "primevue/card";
 import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
+import { useToast } from "primevue/usetoast";
 
 const homesStore = useHomesStore();
 const router = useRouter();
+const toast = useToast();
 
 const showCreateDialog = ref(false);
 const newHomeName = ref("");
@@ -17,6 +19,12 @@ const creating = ref(false);
 
 onMounted(() => {
   homesStore.fetchHomes();
+});
+
+watch(() => homesStore.error, (val) => {
+  if (val) {
+    toast.add({ severity: 'error', summary: 'Error', detail: val, life: 5000 });
+  }
 });
 
 const openCreateDialog = () => {

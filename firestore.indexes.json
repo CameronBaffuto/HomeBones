@@ -13,6 +13,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "homeId", "order": "ASCENDING" },
+        { "fieldPath": "ownerId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "ASCENDING" }
       ]
     },
@@ -21,6 +22,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "roomId", "order": "ASCENDING" },
+        { "fieldPath": "ownerId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     }

@@ -40,6 +40,7 @@ export const useRoomStore = defineStore("rooms", () => {
       const q = query(
         roomsRef,
         where("homeId", "==", homeId),
+        where("ownerId", "==", session.uid),
         orderBy("createdAt", "asc")
       );
       const snap = await getDocs(q);

@@ -58,7 +58,8 @@ const createRoom = async () => {
       </div>
 
       <div v-else-if="!homesStore.currentHome" class="text-center py-8 text-red-500">
-          Home not found or access denied.
+          Home not found or access denied. <br/>
+          <span v-if="homesStore.error" class="text-sm text-surface-600">Error: {{ homesStore.error }}</span>
       </div>
 
       <div v-else>

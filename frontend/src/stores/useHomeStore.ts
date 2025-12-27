@@ -7,7 +7,7 @@ import {
   query,
   where,
   getDocs,
-  addDoc,
+  setDoc,
   serverTimestamp,
   Timestamp,
   doc,
@@ -53,38 +53,38 @@ export const useHomesStore = defineStore("homes", () => {
 
   const createHome = async (name: string) => {
     if (!session.uid) throw new Error("Not signed in");
-    loading.value = true;
-    try {
-      const homesRef = collection(db, "homes");
-      const now = serverTimestamp();
-      
-      const docRef = await addDoc(homesRef, {
+    
+    console.log("Creating home for user:", session.uid);
+
+    // 1. Generate ID synchronously
+    const homesRef = collection(db, "homes");
+    const newDocRef = doc(homesRef);
+    // Use client-side timestamp for simplicity and to avoid rule complexity with serverTimestamp
+    const now = Timestamp.now();
+
+    // 2. Optimistic Update
+    const newHome: Home = {
+      id: newDocRef.id,
+      ownerId: session.uid,
+      name,
+      createdAt: now,
+      updatedAt: now,
+    };
+    
+    homes.value.unshift(newHome);
+
+    // 3. Fire and forget the write
+    setDoc(newDocRef, {
         ownerId: session.uid,
         name,
         createdAt: now,
         updatedAt: now,
-      });
+    }).catch(err => {
+        console.error("Failed to sync new home to server:", err);
+        error.value = `Failed to save home: ${err.message}`;
+    });
 
-      // Optimistic update: Add to local state immediately
-      // Note: serverTimestamp() returns a FieldValue, which isn't directly readable as a Date until fetched.
-      // For display purposes, we can approximate it or re-fetch in background.
-      const newHome: Home = {
-        id: docRef.id,
-        ownerId: session.uid,
-        name,
-        createdAt: Timestamp.now(), // Approximate for immediate display
-        updatedAt: Timestamp.now(),
-      };
-      
-      homes.value.unshift(newHome);
-      
-      return docRef.id;
-    } catch (e: any) {
-      error.value = e.message;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
+    return newDocRef.id;
   };
 
   const selectHome = async (homeId: string) => {

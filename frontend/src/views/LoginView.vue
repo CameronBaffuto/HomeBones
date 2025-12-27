@@ -1,0 +1,108 @@
+<script setup lang="ts">
+import { computed } from "vue";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "@/stores/useAuthStore";
+
+import Button from "primevue/button";
+import InputText from "primevue/inputtext";
+import Password from "primevue/password";
+import Message from "primevue/message";
+
+const auth = useAuthStore();
+const router = useRouter();
+
+const title = computed(() => (auth.mode === "register" ? "Create your account" : "Welcome back"));
+const primaryLabel = computed(() => (auth.mode === "register" ? "Create account" : "Sign in"));
+
+async function onPrimaryClick() {
+  try {
+    await auth.submit();
+    router.replace({ name: "home" });
+  } catch {
+    // error is already stored in auth.error
+  }
+}
+</script>
+
+<template>
+  <div class="min-h-screen flex items-center justify-center px-4">
+    <div class="w-full max-w-md rounded-2xl border border-surface-200 bg-surface-0 p-6 shadow-sm">
+      <div class="mb-6">
+        <div class="flex items-center gap-2">
+          <i class="pi pi-home text-xl"></i>
+          <h1 class="text-xl font-semibold">HomeBones</h1>
+        </div>
+        <p class="mt-2 text-sm text-surface-600">{{ title }}</p>
+      </div>
+
+      <div class="flex gap-2 mb-4">
+        <Button
+          :outlined="auth.mode !== 'login'"
+          label="Sign in"
+          icon="pi pi-sign-in"
+          class="w-1/2"
+          :disabled="auth.loading"
+          @click="auth.setMode('login')"
+        />
+        <Button
+          :outlined="auth.mode !== 'register'"
+          label="Create"
+          icon="pi pi-user-plus"
+          class="w-1/2"
+          :disabled="auth.loading"
+          @click="auth.setMode('register')"
+        />
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-sm font-medium text-surface-700 mb-1">Email</label>
+          <InputText
+            class="w-full"
+            inputmode="email"
+            autocomplete="email"
+            placeholder="you@example.com"
+            :disabled="auth.loading"
+            :modelValue="auth.email"
+            @update:modelValue="auth.setEmail"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-surface-700 mb-1">Password</label>
+          <Password
+            class="w-full"
+            inputClass="w-full"
+            :feedback="auth.mode === 'register'"
+            toggleMask
+            autocomplete="current-password"
+            placeholder="••••••••"
+            :disabled="auth.loading"
+            :modelValue="auth.password"
+            @update:modelValue="auth.setPassword"
+          />
+          <p class="mt-1 text-xs text-surface-500">
+            {{ auth.mode === "register" ? "Minimum 6 characters." : " " }}
+          </p>
+        </div>
+
+        <Message v-if="auth.error" severity="error" class="w-full">
+          {{ auth.error }}
+        </Message>
+
+        <Button
+          class="w-full"
+          :label="primaryLabel"
+          icon="pi pi-check"
+          :loading="auth.loading"
+          @click="onPrimaryClick"
+        />
+      </div>
+
+      <div class="mt-6 text-xs text-surface-500 flex items-center justify-between">
+        <span>By continuing, you agree to save home info to your account.</span>
+        <i class="pi pi-lock"></i>
+      </div>
+    </div>
+  </div>
+</template>

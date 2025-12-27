@@ -96,7 +96,7 @@ export const useRoomStore = defineStore("rooms", () => {
   const updateRoom = async (roomId: string, name: string) => {
     if (!session.uid) return;
     const idx = rooms.value.findIndex(r => r.id === roomId);
-    if (idx !== -1) {
+    if (idx !== -1 && rooms.value[idx]) {
         rooms.value[idx].name = name;
     }
     const docRef = doc(db, "rooms", roomId);

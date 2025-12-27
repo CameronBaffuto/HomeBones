@@ -29,6 +29,7 @@ export const useHomesStore = defineStore("homes", () => {
 
   const homes = ref<Home[]>([]);
   const currentHome = ref<Home | null>(null);
+  const homeId = ref<string | null>(null);
   const loading = ref(false);
   const error = ref<string | null>(null);
 
@@ -94,11 +95,15 @@ export const useHomesStore = defineStore("homes", () => {
     // Optimistic Update
     const idx = homes.value.findIndex(h => h.id === homeId);
     if (idx !== -1) {
-        homes.value[idx].name = name;
+        const home = homes.value[idx];
+        if (home) {
+            home.name = name;
+        }
     }
     // Safely update currentHome
-    if (currentHome.value && currentHome.value.id === homeId) {
-        currentHome.value.name = name;
+    const current = currentHome.value;
+    if (current && current.id === homeId) {
+        current.name = name;
     }
 
     const docRef = doc(db, "homes", homeId);
@@ -117,7 +122,9 @@ export const useHomesStore = defineStore("homes", () => {
 
       // Optimistic delete
       homes.value = homes.value.filter(h => h.id !== homeId);
-      if (currentHome.value && currentHome.value.id === homeId) {
+      
+      const current = currentHome.value;
+      if (current && current.id === homeId) {
           currentHome.value = null;
       }
 
@@ -154,5 +161,27 @@ export const useHomesStore = defineStore("homes", () => {
       }
   }
 
-  return { homes, currentHome, loading, error, fetchHomes, createHome, updateHome, deleteHome, selectHome };
+  const ensureHome = async (): Promise<string> => {
+    // If we already have a homeId, return it
+    if (homeId.value) {
+      return homeId.value;
+    }
+
+    // Fetch existing homes
+    await fetchHomes();
+
+    // If user has homes, use the first one
+    const firstHome = homes.value[0];
+    if (firstHome) {
+      homeId.value = firstHome.id;
+      return homeId.value;
+    }
+
+    // Otherwise create a new home
+    const newHomeId = await createHome("My Home");
+    homeId.value = newHomeId;
+    return newHomeId;
+  }
+
+  return { homes, currentHome, homeId, loading, error, fetchHomes, createHome, updateHome, deleteHome, selectHome, ensureHome };
 });

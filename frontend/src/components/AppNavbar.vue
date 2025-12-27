@@ -26,7 +26,7 @@ const avatarLabel = computed(() =>
   email.value ? email.value.charAt(0).toUpperCase() : "?"
 );
 
-const go = (name: "home") => {
+const go = (name: string) => {
   menuOpen.value = false;
   router.push({ name });
 };
@@ -41,7 +41,7 @@ const logout = async () => {
 <template>
   <header class="px-5 sticky top-0 z-50 bg-surface-0/95 backdrop-blur">
     <div class="flex items-center justify-between px-3 py-3">
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 cursor-pointer" @click="go('home')">
         <slot name="logo">
           <i class="pi pi-home text-lg"></i>
           <span class="text-base font-semibold">HomeBones</span>
@@ -81,8 +81,8 @@ const logout = async () => {
     <div class="flex h-full flex-col">
       <nav class="mt-2 flex flex-col gap-1">
         <Button
-          label="Home"
-          icon="pi pi-home"
+          label="Dashboard"
+          icon="pi pi-th-large"
           text
           class="justify-start"
           @click="go('home')"
@@ -96,7 +96,9 @@ const logout = async () => {
                 <SelectButton
                     :modelValue="theme.mode"
                     :options="themeOptions"
+                    optionLabel="value"
                     optionValue="value"
+                    dataKey="value"
                     @update:modelValue="theme.setMode"
                 >
                     <template #option="{ option }">

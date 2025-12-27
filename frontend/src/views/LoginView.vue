@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useHomesStore } from "@/stores/useHomeStore";
+import { useSessionStore } from "@/stores/useSessionStore";
 
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
@@ -12,6 +13,7 @@ import SelectButton from "primevue/selectbutton";
 
 const auth = useAuthStore();
 const homes = useHomesStore();
+const session = useSessionStore();
 const router = useRouter();
 
 const modeOptions = [
@@ -25,7 +27,23 @@ const primaryLabel = computed(() => (auth.mode === "register" ? "Create account"
 async function onPrimaryClick() {
   try {
     await auth.submit();
-    await homes.ensureHome();
+    
+    // Wait for session to sync if not already authed
+    if (!session.isAuthed) {
+      await new Promise<void>((resolve) => {
+        const stop = watch(
+          () => session.isAuthed,
+          (val) => {
+            if (val) {
+              stop();
+              resolve();
+            }
+          }
+        );
+      });
+    }
+
+    // Redirect to dashboard/home list instead of forcing home creation
     router.replace({ name: "home" });
   } catch {
     // auth store already sets auth.error

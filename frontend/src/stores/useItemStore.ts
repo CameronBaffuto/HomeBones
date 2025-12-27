@@ -7,8 +7,7 @@ import {
   query,
   where,
   getDocs,
-  addDoc,
-  serverTimestamp,
+  setDoc,
   orderBy,
   Timestamp,
   doc,
@@ -73,18 +72,37 @@ export const useItemStore = defineStore("items", () => {
     loading.value = true;
     try {
       const itemsRef = collection(db, "items");
-      await addDoc(itemsRef, {
+      const newDocRef = doc(itemsRef);
+      const now = Timestamp.now();
+
+      const newItem: Item = {
+        id: newDocRef.id,
+        homeId,
+        roomId,
+        ownerId: session.uid,
+        title,
+        type: type || undefined,
+        fields,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      items.value.unshift(newItem);
+
+      setDoc(newDocRef, {
         homeId,
         roomId,
         ownerId: session.uid,
         title,
         type: type || null,
         fields,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        createdAt: now,
+        updatedAt: now,
+      }).catch(err => {
+          console.error(err);
+          error.value = "Failed to create item";
       });
-      // Refresh list
-      await fetchItems(roomId);
+
     } catch (e: any) {
       error.value = e.message;
       throw e;
@@ -97,7 +115,7 @@ export const useItemStore = defineStore("items", () => {
       if (!session.uid) return;
       const idx = items.value.findIndex(i => i.id === itemId);
       if (idx !== -1) {
-          items.value[idx] = { ...items.value[idx], ...data };
+          items.value[idx] = { ...items.value[idx], ...data } as Item;
       }
       
       const docRef = doc(db, "items", itemId);

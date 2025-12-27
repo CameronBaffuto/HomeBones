@@ -7,8 +7,7 @@ import {
   query,
   where,
   getDocs,
-  addDoc,
-  serverTimestamp,
+  setDoc,
   orderBy,
   Timestamp,
   doc,
@@ -61,15 +60,31 @@ export const useRoomStore = defineStore("rooms", () => {
     loading.value = true;
     try {
       const roomsRef = collection(db, "rooms");
-      await addDoc(roomsRef, {
+      const newDocRef = doc(roomsRef);
+      const now = Timestamp.now();
+
+      const newRoom: Room = {
+        id: newDocRef.id,
         homeId,
         ownerId: session.uid,
         name,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      rooms.value.push(newRoom);
+
+      setDoc(newDocRef, {
+        homeId,
+        ownerId: session.uid,
+        name,
+        createdAt: now,
+        updatedAt: now,
+      }).catch(err => {
+          console.error(err);
+          error.value = "Failed to create room";
       });
-      // Refresh list
-      await fetchRooms(homeId);
+
     } catch (e: any) {
       error.value = e.message;
       throw e;

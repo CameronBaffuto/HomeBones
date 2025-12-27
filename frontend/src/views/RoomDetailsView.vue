@@ -15,7 +15,6 @@ import ConfirmDialog from "primevue/confirmdialog";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import Tag from "primevue/tag";
-import Chip from "primevue/chip";
 
 const route = useRoute();
 const router = useRouter();

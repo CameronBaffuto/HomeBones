@@ -10,7 +10,6 @@ import {
   setDoc,
   deleteDoc,
   updateDoc,
-  serverTimestamp,
   Timestamp,
   doc,
   getDoc,
@@ -97,7 +96,8 @@ export const useHomesStore = defineStore("homes", () => {
     if (idx !== -1) {
         homes.value[idx].name = name;
     }
-    if (currentHome.value?.id === homeId) {
+    // Safely update currentHome
+    if (currentHome.value && currentHome.value.id === homeId) {
         currentHome.value.name = name;
     }
 
@@ -117,7 +117,7 @@ export const useHomesStore = defineStore("homes", () => {
 
       // Optimistic delete
       homes.value = homes.value.filter(h => h.id !== homeId);
-      if (currentHome.value?.id === homeId) {
+      if (currentHome.value && currentHome.value.id === homeId) {
           currentHome.value = null;
       }
 

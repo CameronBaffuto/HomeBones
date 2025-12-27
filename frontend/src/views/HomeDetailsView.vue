@@ -4,9 +4,10 @@ import { useRoute, useRouter } from "vue-router";
 import AppLayout from "@/views/AppLayout.vue";
 import { useHomesStore } from "@/stores/useHomeStore";
 import { useRoomStore, type Room } from "@/stores/useRoomStore";
+import { useModalStore } from "@/stores/useModalStore";
+import CreateRoomDialog from "@/modals/CreateRoomDialog.vue";
+import EditRoomDialog from "@/modals/EditRoomDialog.vue";
 import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import InputText from "primevue/inputtext";
 import Card from "primevue/card";
 import Menu from "primevue/menu";
 import ConfirmDialog from "primevue/confirmdialog";
@@ -17,16 +18,15 @@ const route = useRoute();
 const router = useRouter();
 const homesStore = useHomesStore();
 const roomStore = useRoomStore();
+const modalStore = useModalStore();
 const confirm = useConfirm();
 const toast = useToast();
 
 const homeId = route.params.homeId as string;
 
-const showCreateRoomDialog = ref(false);
 const newRoomName = ref("");
 const creatingRoom = ref(false);
 
-const showEditRoomDialog = ref(false);
 const editingRoomId = ref<string | null>(null);
 const editRoomName = ref("");
 const editingRoom = ref(false);
@@ -68,7 +68,7 @@ onMounted(async () => {
 
 const openCreateRoomDialog = () => {
     newRoomName.value = "";
-    showCreateRoomDialog.value = true;
+    modalStore.open("createRoom");
 };
 
 const createRoom = async () => {
@@ -76,7 +76,7 @@ const createRoom = async () => {
     creatingRoom.value = true;
     try {
         await roomStore.createRoom(homeId, newRoomName.value);
-        showCreateRoomDialog.value = false;
+        modalStore.close("createRoom");
     } catch (e) {
         console.error(e);
     } finally {
@@ -92,7 +92,7 @@ const toggleMenu = (event: Event, room: Room) => {
 const openEditRoomDialog = (room: Room) => {
     editingRoomId.value = room.id;
     editRoomName.value = room.name;
-    showEditRoomDialog.value = true;
+    modalStore.open("editRoom");
 };
 
 const saveEditRoom = async () => {
@@ -100,7 +100,7 @@ const saveEditRoom = async () => {
     editingRoom.value = true;
     try {
         await roomStore.updateRoom(editingRoomId.value, editRoomName.value);
-        showEditRoomDialog.value = false;
+        modalStore.close("editRoom");
         toast.add({ severity: 'success', summary: 'Updated', detail: 'Room renamed successfully', life: 3000 });
     } finally {
         editingRoom.value = false;
@@ -210,29 +210,19 @@ const goToRoom = (roomId: string) => {
 
     </div>
 
-    <!-- Create Room Dialog -->
-    <Dialog v-model:visible="showCreateRoomDialog" modal header="Add New Room" :style="{ width: '25rem' }">
-      <div class="flex flex-col gap-4 mb-4">
-        <label for="roomName" class="font-semibold w-24">Room Name</label>
-        <InputText id="roomName" v-model="newRoomName" class="flex-auto" autocomplete="off" placeholder="e.g. Living Room" />
-      </div>
-      <div class="flex justify-end gap-2">
-        <Button type="button" label="Cancel" severity="secondary" @click="showCreateRoomDialog = false"></Button>
-        <Button type="button" label="Add" @click="createRoom" :loading="creatingRoom"></Button>
-      </div>
-    </Dialog>
+    <CreateRoomDialog
+      v-model:visible="modalStore.createRoom"
+      v-model:name="newRoomName"
+      :loading="creatingRoom"
+      @create="createRoom"
+    />
 
-    <!-- Edit Room Dialog -->
-    <Dialog v-model:visible="showEditRoomDialog" modal header="Rename Room" :style="{ width: '25rem' }">
-        <div class="flex flex-col gap-4 mb-4">
-            <label for="editRoomName" class="font-semibold w-24">Name</label>
-            <InputText id="editRoomName" v-model="editRoomName" class="flex-auto" autocomplete="off" />
-        </div>
-        <div class="flex justify-end gap-2">
-            <Button type="button" label="Cancel" severity="secondary" @click="showEditRoomDialog = false"></Button>
-            <Button type="button" label="Save" @click="saveEditRoom" :loading="editingRoom"></Button>
-        </div>
-    </Dialog>
+    <EditRoomDialog
+      v-model:visible="modalStore.editRoom"
+      v-model:name="editRoomName"
+      :loading="editingRoom"
+      @save="saveEditRoom"
+    />
 
     <Menu ref="menu" :model="menuItems" :popup="true" />
     <ConfirmDialog />

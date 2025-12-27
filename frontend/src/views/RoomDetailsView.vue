@@ -5,10 +5,10 @@ import AppLayout from "@/views/AppLayout.vue";
 import { useHomesStore } from "@/stores/useHomeStore";
 import { useRoomStore } from "@/stores/useRoomStore";
 import { useItemStore, type Item, type ItemField } from "@/stores/useItemStore";
+import { useModalStore } from "@/stores/useModalStore";
+import ItemDialog from "@/modals/ItemDialog.vue";
 
 import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import InputText from "primevue/inputtext";
 import Card from "primevue/card";
 import Menu from "primevue/menu";
 import ConfirmDialog from "primevue/confirmdialog";
@@ -21,6 +21,7 @@ const router = useRouter();
 const homesStore = useHomesStore();
 const roomStore = useRoomStore();
 const itemStore = useItemStore();
+const modalStore = useModalStore();
 const confirm = useConfirm();
 const toast = useToast();
 
@@ -46,7 +47,6 @@ const goBack = () => {
 };
 
 // Item Form State
-const showItemDialog = ref(false);
 const isEditing = ref(false);
 const savingItem = ref(false);
 const itemForm = ref({
@@ -91,7 +91,7 @@ onMounted(() => {
 const openCreateItemDialog = () => {
     isEditing.value = false;
     itemForm.value = { id: "", title: "", type: "", fields: [] };
-    showItemDialog.value = true;
+    modalStore.open("item");
 };
 
 const openEditItemDialog = (item: Item) => {
@@ -103,7 +103,7 @@ const openEditItemDialog = (item: Item) => {
         type: item.type ?? "",
         fields: item.fields.map(f => ({ ...f }))
     };
-    showItemDialog.value = true;
+    modalStore.open("item");
 };
 
 const addField = () => {
@@ -150,7 +150,7 @@ const saveItem = async () => {
             );
             toast.add({ severity: 'success', summary: 'Created', detail: 'Item created', life: 3000 });
         }
-        showItemDialog.value = false;
+        modalStore.close("item");
     } catch (e: any) {
         console.error(e);
         toast.add({ severity: 'error', summary: 'Error', detail: e.message });
@@ -252,43 +252,15 @@ const confirmDeleteItem = (item: Item) => {
         </div>
     </div>
 
-    <!-- Item Dialog -->
-    <Dialog v-model:visible="showItemDialog" modal :header="isEditing ? 'Edit Item' : 'New Item'" :style="{ width: '35rem' }">
-        <div class="flex flex-col gap-4">
-            <div class="flex gap-4">
-                 <div class="flex-1 flex flex-col gap-1">
-                    <label class="text-sm font-semibold">Title</label>
-                    <InputText v-model="itemForm.title" placeholder="e.g. Paint Color" />
-                 </div>
-                 <div class="w-1/3 flex flex-col gap-1">
-                    <label class="text-sm font-semibold">Type (Optional)</label>
-                    <InputText v-model="itemForm.type" placeholder="e.g. Material" />
-                 </div>
-            </div>
-
-            <div class="border-t border-surface-200 my-1"></div>
-            
-            <div class="flex items-center justify-between">
-                <span class="font-semibold text-sm">Details</span>
-                <Button label="Add Detail" icon="pi pi-plus" size="small" text @click="addField" />
-            </div>
-
-            <div class="flex flex-col gap-2 max-h-[40vh] overflow-y-auto pr-1">
-                <div v-for="(field, index) in itemForm.fields" :key="index" class="flex gap-2 items-center">
-                    <InputText v-model="field.key" placeholder="Key (e.g. Brand)" class="flex-1" size="small" />
-                    <InputText v-model="field.value" placeholder="Value (e.g. Behr)" class="flex-1" size="small" />
-                    <Button icon="pi pi-trash" text severity="danger" size="small" @click="removeField(index)" />
-                </div>
-                <div v-if="itemForm.fields.length === 0" class="text-center py-4 text-sm text-surface-500 bg-surface-50 rounded">
-                    No details added.
-                </div>
-            </div>
-        </div>
-        <template #footer>
-            <Button label="Cancel" severity="secondary" @click="showItemDialog = false" />
-            <Button label="Save" @click="saveItem" :loading="savingItem" />
-        </template>
-    </Dialog>
+    <ItemDialog
+      v-model:visible="modalStore.item"
+      v-model:form="itemForm"
+      :is-editing="isEditing"
+      :saving="savingItem"
+      @add-field="addField"
+      @remove-field="removeField"
+      @save="saveItem"
+    />
     
     <Menu ref="menu" :model="menuItems" :popup="true" />
     <ConfirmDialog />

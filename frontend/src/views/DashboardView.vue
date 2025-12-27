@@ -3,25 +3,25 @@ import { onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import AppLayout from "@/views/AppLayout.vue";
 import { useHomesStore, type Home } from "@/stores/useHomeStore";
+import { useModalStore } from "@/stores/useModalStore";
+import CreateHomeDialog from "@/modals/CreateHomeDialog.vue";
+import EditHomeDialog from "@/modals/EditHomeDialog.vue";
 import Button from "primevue/button";
 import Card from "primevue/card";
-import Dialog from "primevue/dialog";
-import InputText from "primevue/inputtext";
 import { useToast } from "primevue/usetoast";
 import Menu from "primevue/menu";
 import ConfirmDialog from "primevue/confirmdialog";
 import { useConfirm } from "primevue/useconfirm";
 
 const homesStore = useHomesStore();
+const modalStore = useModalStore();
 const router = useRouter();
 const toast = useToast();
 const confirm = useConfirm();
 
-const showCreateDialog = ref(false);
 const newHomeName = ref("");
 const creating = ref(false);
 
-const showEditDialog = ref(false);
 const editingHomeId = ref<string | null>(null);
 const editHomeName = ref("");
 const editing = ref(false);
@@ -64,7 +64,7 @@ watch(() => homesStore.error, (val) => {
 
 const openCreateDialog = () => {
   newHomeName.value = "";
-  showCreateDialog.value = true;
+  modalStore.open("createHome");
 };
 
 const createHome = async () => {
@@ -72,7 +72,7 @@ const createHome = async () => {
   creating.value = true;
   try {
     const id = await homesStore.createHome(newHomeName.value);
-    showCreateDialog.value = false;
+    modalStore.close("createHome");
     router.push({ name: "home-details", params: { homeId: id } });
   } catch (e) {
     console.error(e);
@@ -93,7 +93,7 @@ const toggleMenu = (event: Event, home: Home) => {
 const openEditDialog = (home: Home) => {
     editingHomeId.value = home.id;
     editHomeName.value = home.name;
-    showEditDialog.value = true;
+    modalStore.open("editHome");
 };
 
 const saveEditHome = async () => {
@@ -101,7 +101,7 @@ const saveEditHome = async () => {
     editing.value = true;
     try {
         await homesStore.updateHome(editingHomeId.value, editHomeName.value);
-        showEditDialog.value = false;
+        modalStore.close("editHome");
         toast.add({ severity: 'success', summary: 'Updated', detail: 'Home renamed successfully', life: 3000 });
     } finally {
         editing.value = false;
@@ -183,29 +183,19 @@ const confirmDeleteHome = (home: Home) => {
       </div>
     </div>
 
-    <!-- Create Home Dialog -->
-    <Dialog v-model:visible="showCreateDialog" modal header="Create New Home" :style="{ width: '25rem' }">
-      <div class="flex flex-col gap-4 mb-4">
-        <label for="homeName" class="font-semibold w-24">Home Name</label>
-        <InputText id="homeName" v-model="newHomeName" class="flex-auto" autocomplete="off" placeholder="e.g. Vacation Cabin" />
-      </div>
-      <div class="flex justify-end gap-2">
-        <Button type="button" label="Cancel" severity="secondary" @click="showCreateDialog = false"></Button>
-        <Button type="button" label="Create" @click="createHome" :loading="creating"></Button>
-      </div>
-    </Dialog>
+    <CreateHomeDialog
+      v-model:visible="modalStore.createHome"
+      v-model:name="newHomeName"
+      :loading="creating"
+      @create="createHome"
+    />
 
-    <!-- Edit Home Dialog -->
-    <Dialog v-model:visible="showEditDialog" modal header="Rename Home" :style="{ width: '25rem' }">
-      <div class="flex flex-col gap-4 mb-4">
-        <label for="editName" class="font-semibold w-24">Name</label>
-        <InputText id="editName" v-model="editHomeName" class="flex-auto" autocomplete="off" />
-      </div>
-      <div class="flex justify-end gap-2">
-        <Button type="button" label="Cancel" severity="secondary" @click="showEditDialog = false"></Button>
-        <Button type="button" label="Save" @click="saveEditHome" :loading="editing"></Button>
-      </div>
-    </Dialog>
+    <EditHomeDialog
+      v-model:visible="modalStore.editHome"
+      v-model:name="editHomeName"
+      :loading="editing"
+      @save="saveEditHome"
+    />
 
     <Menu ref="menu" :model="menuItems" :popup="true" />
     <ConfirmDialog />

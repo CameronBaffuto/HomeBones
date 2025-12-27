@@ -6,8 +6,10 @@ import { Button } from 'primevue';
 
 <template>
   <AppLayout>
-    <h1 class="text-4xl text-green-900">Welcome to HomeBones!</h1>
-    <p class="mt-4 text-amber-500">Your smart home management system</p>
-    <Button label="Get Started" icon="pi pi-home" class="mt-6" />
+    <div class="space-y-4">
+      <h1 class="text-2xl font-bold sm:text-3xl md:text-4xl text-surface-900">Welcome to HomeBones!</h1>
+      <p class="text-base text-surface-600 sm:text-lg">Your smart home management system</p>
+      <Button label="Get Started" icon="pi pi-home" class="mt-6" />
+    </div>
   </AppLayout>
 </template>

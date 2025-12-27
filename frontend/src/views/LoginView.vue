@@ -7,9 +7,15 @@ import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import Password from "primevue/password";
 import Message from "primevue/message";
+import SelectButton from "primevue/selectbutton";
 
 const auth = useAuthStore();
 const router = useRouter();
+
+const modeOptions = [
+  { label: "Sign in", value: "login" },
+  { label: "Create", value: "register" },
+];
 
 const title = computed(() => (auth.mode === "register" ? "Create your account" : "Welcome back"));
 const primaryLabel = computed(() => (auth.mode === "register" ? "Create account" : "Sign in"));
@@ -25,32 +31,25 @@ async function onPrimaryClick() {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center px-4">
-    <div class="w-full max-w-md rounded-2xl border border-surface-200 bg-surface-0 p-6 shadow-sm">
-      <div class="mb-6">
-        <div class="flex items-center gap-2">
+  <div class="flex min-h-dvh items-center justify-center bg-surface-50 px-4 py-6">
+    <div class="w-full max-w-sm rounded-2xl border border-surface-200 bg-surface-0 p-6 shadow-sm">
+      <div class="mb-6 text-center">
+        <div class="flex items-center justify-center gap-2">
           <i class="pi pi-home text-xl"></i>
           <h1 class="text-xl font-semibold">HomeBones</h1>
         </div>
         <p class="mt-2 text-sm text-surface-600">{{ title }}</p>
       </div>
 
-      <div class="flex gap-2 mb-4">
-        <Button
-          :outlined="auth.mode !== 'login'"
-          label="Sign in"
-          icon="pi pi-sign-in"
-          class="w-1/2"
+      <div class="mb-4">
+        <SelectButton
+          v-model="auth.mode"
+          :options="modeOptions"
+          optionLabel="label"
+          optionValue="value"
+          class="w-full"
+          fluid
           :disabled="auth.loading"
-          @click="auth.setMode('login')"
-        />
-        <Button
-          :outlined="auth.mode !== 'register'"
-          label="Create"
-          icon="pi pi-user-plus"
-          class="w-1/2"
-          :disabled="auth.loading"
-          @click="auth.setMode('register')"
         />
       </div>
 

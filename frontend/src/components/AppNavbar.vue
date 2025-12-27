@@ -89,42 +89,42 @@ const logout = async () => {
         />
       </nav>
 
-    <div class="mt-auto pt-4">
-        <div class="flex items-center justify-between py-2">
-            <span class="text-sm text-surface-600">Theme</span>
+        <div class="mt-auto pt-4">
+            <div class="flex items-center justify-between py-2">
+                <span class="text-sm text-surface-600">Theme</span>
 
-            <SelectButton
-                :modelValue="theme.mode"
-                :options="themeOptions"
-                optionValue="value"
-                @update:modelValue="theme.setMode"
-            >
-                <template #option="{ option }">
-                <i :class="option.icon" class="text-sm" />
-                </template>
-            </SelectButton>
-        </div>
-        <div class="flex items-center justify-between rounded-xl bg-surface-50 px-3 py-3">
-            <div class="flex items-center gap-3 min-w-0">
-            <Avatar :label="avatarLabel" shape="circle" />
-            <div class="min-w-0">
-                <p class="text-xs text-surface-500">Signed in as</p>
-                <p class="text-sm font-medium truncate">
-                {{ email || "Account" }}
-                </p>
+                <SelectButton
+                    :modelValue="theme.mode"
+                    :options="themeOptions"
+                    optionValue="value"
+                    @update:modelValue="theme.setMode"
+                >
+                    <template #option="{ option }">
+                    <i :class="option.icon" class="text-sm" />
+                    </template>
+                </SelectButton>
             </div>
-            </div>
+            <div class="flex items-center justify-between rounded-xl bg-surface-50 px-3 py-3">
+                <div class="flex items-center gap-3 min-w-0">
+                <Avatar :label="avatarLabel" shape="circle" />
+                <div class="min-w-0">
+                    <p class="text-xs text-surface-500">Signed in as</p>
+                    <p class="text-sm font-medium truncate">
+                    {{ email || "Account" }}
+                    </p>
+                </div>
+                </div>
 
-            <Button
-            v-if="session.isAuthed"
-            icon="pi pi-sign-out"
-            text
-            rounded
-            severity="danger"
-            @click="logout"
-            />
+                <Button
+                v-if="session.isAuthed"
+                icon="pi pi-sign-out"
+                text
+                rounded
+                severity="danger"
+                @click="logout"
+                />
+            </div>
         </div>
-    </div>
- </div>
+    </div>    
   </Drawer>
 </template>

@@ -8,6 +8,8 @@ import {
   where,
   getDocs,
   setDoc,
+  deleteDoc,
+  updateDoc,
   serverTimestamp,
   Timestamp,
   doc,
@@ -87,6 +89,45 @@ export const useHomesStore = defineStore("homes", () => {
     return newDocRef.id;
   };
 
+  const updateHome = async (homeId: string, name: string) => {
+    if (!session.uid) return;
+    
+    // Optimistic Update
+    const idx = homes.value.findIndex(h => h.id === homeId);
+    if (idx !== -1) {
+        homes.value[idx].name = name;
+    }
+    if (currentHome.value?.id === homeId) {
+        currentHome.value.name = name;
+    }
+
+    const docRef = doc(db, "homes", homeId);
+    updateDoc(docRef, { 
+        name,
+        updatedAt: Timestamp.now()
+    }).catch(err => {
+        console.error("Failed to update home:", err);
+        error.value = "Failed to update home name";
+        // Revert? For now, we assume success.
+    });
+  };
+
+  const deleteHome = async (homeId: string) => {
+      if (!session.uid) return;
+
+      // Optimistic delete
+      homes.value = homes.value.filter(h => h.id !== homeId);
+      if (currentHome.value?.id === homeId) {
+          currentHome.value = null;
+      }
+
+      const docRef = doc(db, "homes", homeId);
+      deleteDoc(docRef).catch(err => {
+          console.error("Failed to delete home:", err);
+          error.value = "Failed to delete home";
+      });
+  };
+
   const selectHome = async (homeId: string) => {
       // If we already have the home in our list, use it
       const found = homes.value.find(h => h.id === homeId);
@@ -113,5 +154,5 @@ export const useHomesStore = defineStore("homes", () => {
       }
   }
 
-  return { homes, currentHome, loading, error, fetchHomes, createHome, selectHome };
+  return { homes, currentHome, loading, error, fetchHomes, createHome, updateHome, deleteHome, selectHome };
 });

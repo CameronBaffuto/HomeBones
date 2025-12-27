@@ -11,6 +11,9 @@ import {
   serverTimestamp,
   orderBy,
   Timestamp,
+  doc,
+  deleteDoc,
+  updateDoc
 } from "firebase/firestore";
 
 export interface Room {
@@ -75,5 +78,31 @@ export const useRoomStore = defineStore("rooms", () => {
     }
   };
 
-  return { rooms, loading, error, fetchRooms, createRoom };
+  const updateRoom = async (roomId: string, name: string) => {
+    if (!session.uid) return;
+    const idx = rooms.value.findIndex(r => r.id === roomId);
+    if (idx !== -1) {
+        rooms.value[idx].name = name;
+    }
+    const docRef = doc(db, "rooms", roomId);
+    updateDoc(docRef, { 
+        name,
+        updatedAt: Timestamp.now() 
+    }).catch(err => {
+        error.value = "Failed to update room";
+        console.error(err);
+    });
+  };
+
+  const deleteRoom = async (roomId: string) => {
+    if (!session.uid) return;
+    rooms.value = rooms.value.filter(r => r.id !== roomId);
+    const docRef = doc(db, "rooms", roomId);
+    deleteDoc(docRef).catch(err => {
+        error.value = "Failed to delete room";
+        console.error(err);
+    });
+  };
+
+  return { rooms, loading, error, fetchRooms, createRoom, updateRoom, deleteRoom };
 });

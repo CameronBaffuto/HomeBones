@@ -1,23 +1,61 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import AppLayout from "@/views/AppLayout.vue";
 import { useHomesStore } from "@/stores/useHomeStore";
-import { useRoomStore } from "@/stores/useRoomStore";
+import { useRoomStore, type Room } from "@/stores/useRoomStore";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
 import Card from "primevue/card";
+import Menu from "primevue/menu";
+import ConfirmDialog from "primevue/confirmdialog";
+import { useConfirm } from "primevue/useconfirm";
+import { useToast } from "primevue/usetoast";
 
 const route = useRoute();
+const router = useRouter();
 const homesStore = useHomesStore();
 const roomStore = useRoomStore();
+const confirm = useConfirm();
+const toast = useToast();
 
 const homeId = route.params.homeId as string;
 
 const showCreateRoomDialog = ref(false);
 const newRoomName = ref("");
 const creatingRoom = ref(false);
+
+const showEditRoomDialog = ref(false);
+const editingRoomId = ref<string | null>(null);
+const editRoomName = ref("");
+const editingRoom = ref(false);
+
+const menu = ref();
+const selectedRoom = ref<Room | null>(null);
+
+const menuItems = ref([
+    {
+        label: 'Options',
+        items: [
+            {
+                label: 'Rename',
+                icon: 'pi pi-pencil',
+                command: () => {
+                    if (selectedRoom.value) openEditRoomDialog(selectedRoom.value);
+                }
+            },
+            {
+                label: 'Delete',
+                icon: 'pi pi-trash',
+                class: 'text-red-500',
+                command: () => {
+                    if (selectedRoom.value) confirmDeleteRoom(selectedRoom.value);
+                }
+            }
+        ]
+    }
+]);
 
 onMounted(async () => {
     if (homeId) {
@@ -46,6 +84,54 @@ const createRoom = async () => {
     }
 };
 
+const toggleMenu = (event: Event, room: Room) => {
+    selectedRoom.value = room;
+    menu.value.toggle(event);
+};
+
+const openEditRoomDialog = (room: Room) => {
+    editingRoomId.value = room.id;
+    editRoomName.value = room.name;
+    showEditRoomDialog.value = true;
+};
+
+const saveEditRoom = async () => {
+    if (!editingRoomId.value || !editRoomName.value.trim()) return;
+    editingRoom.value = true;
+    try {
+        await roomStore.updateRoom(editingRoomId.value, editRoomName.value);
+        showEditRoomDialog.value = false;
+        toast.add({ severity: 'success', summary: 'Updated', detail: 'Room renamed successfully', life: 3000 });
+    } finally {
+        editingRoom.value = false;
+    }
+};
+
+const confirmDeleteRoom = (room: Room) => {
+    confirm.require({
+        message: `Are you sure you want to delete "${room.name}"? All items in this room will be inaccessible.`,
+        header: 'Delete Room',
+        icon: 'pi pi-exclamation-triangle',
+        rejectProps: {
+            label: 'Cancel',
+            severity: 'secondary',
+            outlined: true
+        },
+        acceptProps: {
+            label: 'Delete',
+            severity: 'danger'
+        },
+        accept: () => {
+            roomStore.deleteRoom(room.id);
+            toast.add({ severity: 'info', summary: 'Deleted', detail: 'Room deleted', life: 3000 });
+        }
+    });
+};
+
+const goToRoom = (roomId: string) => {
+    router.push({ name: 'room-details', params: { roomId } });
+};
+
 </script>
 
 <template>
@@ -63,6 +149,16 @@ const createRoom = async () => {
       </div>
 
       <div v-else>
+          <div class="mb-4">
+              <Button 
+                label="Back to Dashboard" 
+                icon="pi pi-arrow-left" 
+                text 
+                size="small" 
+                class="p-0 text-surface-500 hover:text-primary-600" 
+                @click="router.push({ name: 'home' })" 
+              />
+          </div>
           <div class="flex items-center justify-between mb-6">
               <div>
                   <h1 class="text-2xl font-bold text-surface-900">{{ homesStore.currentHome.name }}</h1>
@@ -85,12 +181,23 @@ const createRoom = async () => {
               <Card 
                 v-for="room in roomStore.rooms" 
                 :key="room.id"
-                class="border border-surface-200 shadow-none hover:shadow-md transition-shadow cursor-pointer"
+                class="border border-surface-200 shadow-none hover:shadow-md transition-shadow cursor-pointer relative group"
+                @click="goToRoom(room.id)"
               >
                   <template #title>
-                      <div class="flex items-center gap-2">
-                        <i class="pi pi-box text-surface-500"></i>
-                        <span>{{ room.name }}</span>
+                      <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 overflow-hidden">
+                            <i class="pi pi-box text-surface-500"></i>
+                            <span class="truncate">{{ room.name }}</span>
+                        </div>
+                        <Button 
+                            icon="pi pi-ellipsis-v" 
+                            text 
+                            rounded 
+                            severity="secondary" 
+                            class="opacity-0 group-hover:opacity-100 transition-opacity" 
+                            @click.stop="toggleMenu($event, room)" 
+                        />
                       </div>
                   </template>
                   <template #content>
@@ -114,5 +221,20 @@ const createRoom = async () => {
         <Button type="button" label="Add" @click="createRoom" :loading="creatingRoom"></Button>
       </div>
     </Dialog>
+
+    <!-- Edit Room Dialog -->
+    <Dialog v-model:visible="showEditRoomDialog" modal header="Rename Room" :style="{ width: '25rem' }">
+        <div class="flex flex-col gap-4 mb-4">
+            <label for="editRoomName" class="font-semibold w-24">Name</label>
+            <InputText id="editRoomName" v-model="editRoomName" class="flex-auto" autocomplete="off" />
+        </div>
+        <div class="flex justify-end gap-2">
+            <Button type="button" label="Cancel" severity="secondary" @click="showEditRoomDialog = false"></Button>
+            <Button type="button" label="Save" @click="saveEditRoom" :loading="editingRoom"></Button>
+        </div>
+    </Dialog>
+
+    <Menu ref="menu" :model="menuItems" :popup="true" />
+    <ConfirmDialog />
   </AppLayout>
 </template>

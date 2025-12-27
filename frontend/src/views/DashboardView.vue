@@ -2,20 +2,55 @@
 import { onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import AppLayout from "@/views/AppLayout.vue";
-import { useHomesStore } from "@/stores/useHomeStore";
+import { useHomesStore, type Home } from "@/stores/useHomeStore";
 import Button from "primevue/button";
 import Card from "primevue/card";
 import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
 import { useToast } from "primevue/usetoast";
+import Menu from "primevue/menu";
+import ConfirmDialog from "primevue/confirmdialog";
+import { useConfirm } from "primevue/useconfirm";
 
 const homesStore = useHomesStore();
 const router = useRouter();
 const toast = useToast();
+const confirm = useConfirm();
 
 const showCreateDialog = ref(false);
 const newHomeName = ref("");
 const creating = ref(false);
+
+const showEditDialog = ref(false);
+const editingHomeId = ref<string | null>(null);
+const editHomeName = ref("");
+const editing = ref(false);
+
+const menu = ref();
+const selectedHome = ref<Home | null>(null);
+
+const menuItems = ref([
+    {
+        label: 'Options',
+        items: [
+            {
+                label: 'Rename',
+                icon: 'pi pi-pencil',
+                command: () => {
+                    if (selectedHome.value) openEditDialog(selectedHome.value);
+                }
+            },
+            {
+                label: 'Delete',
+                icon: 'pi pi-trash',
+                class: 'text-red-500',
+                command: () => {
+                    if (selectedHome.value) confirmDeleteHome(selectedHome.value);
+                }
+            }
+        ]
+    }
+]);
 
 onMounted(() => {
   homesStore.fetchHomes();
@@ -49,6 +84,51 @@ const createHome = async () => {
 const goToHome = (id: string) => {
   router.push({ name: "home-details", params: { homeId: id } });
 };
+
+const toggleMenu = (event: Event, home: Home) => {
+    selectedHome.value = home;
+    menu.value.toggle(event);
+};
+
+const openEditDialog = (home: Home) => {
+    editingHomeId.value = home.id;
+    editHomeName.value = home.name;
+    showEditDialog.value = true;
+};
+
+const saveEditHome = async () => {
+    if (!editingHomeId.value || !editHomeName.value.trim()) return;
+    editing.value = true;
+    try {
+        await homesStore.updateHome(editingHomeId.value, editHomeName.value);
+        showEditDialog.value = false;
+        toast.add({ severity: 'success', summary: 'Updated', detail: 'Home renamed successfully', life: 3000 });
+    } finally {
+        editing.value = false;
+    }
+};
+
+const confirmDeleteHome = (home: Home) => {
+    confirm.require({
+        message: `Are you sure you want to delete "${home.name}"? This action cannot be undone.`,
+        header: 'Delete Home',
+        icon: 'pi pi-exclamation-triangle',
+        rejectProps: {
+            label: 'Cancel',
+            severity: 'secondary',
+            outlined: true
+        },
+        acceptProps: {
+            label: 'Delete',
+            severity: 'danger'
+        },
+        accept: () => {
+            homesStore.deleteHome(home.id);
+            toast.add({ severity: 'info', summary: 'Deleted', detail: 'Home deleted', life: 3000 });
+        }
+    });
+};
+
 </script>
 
 <template>
@@ -75,18 +155,28 @@ const goToHome = (id: string) => {
         <Card
           v-for="home in homesStore.homes"
           :key="home.id"
-          class="cursor-pointer hover:shadow-md transition-shadow border border-surface-200 shadow-none"
+          class="cursor-pointer hover:shadow-md transition-shadow border border-surface-200 shadow-none relative group"
           @click="goToHome(home.id)"
         >
           <template #title>
-            <div class="flex items-center gap-2">
-                <i class="pi pi-home text-primary-500"></i>
-                <span class="truncate">{{ home.name }}</span>
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 overflow-hidden">
+                    <i class="pi pi-home text-primary-500"></i>
+                    <span class="truncate">{{ home.name }}</span>
+                </div>
+                <Button 
+                    icon="pi pi-ellipsis-v" 
+                    text 
+                    rounded 
+                    severity="secondary" 
+                    class="opacity-0 group-hover:opacity-100 transition-opacity" 
+                    @click.stop="toggleMenu($event, home)" 
+                />
             </div>
           </template>
           <template #content>
             <p class="text-xs text-surface-500">
-              Created: {{ home.createdAt?.toDate().toLocaleDateString() ?? 'Just now' }}
+              Created: {{ home.createdAt?.toDate ? home.createdAt.toDate().toLocaleDateString() : 'Just now' }}
             </p>
           </template>
         </Card>
@@ -104,5 +194,20 @@ const goToHome = (id: string) => {
         <Button type="button" label="Create" @click="createHome" :loading="creating"></Button>
       </div>
     </Dialog>
+
+    <!-- Edit Home Dialog -->
+    <Dialog v-model:visible="showEditDialog" modal header="Rename Home" :style="{ width: '25rem' }">
+      <div class="flex flex-col gap-4 mb-4">
+        <label for="editName" class="font-semibold w-24">Name</label>
+        <InputText id="editName" v-model="editHomeName" class="flex-auto" autocomplete="off" />
+      </div>
+      <div class="flex justify-end gap-2">
+        <Button type="button" label="Cancel" severity="secondary" @click="showEditDialog = false"></Button>
+        <Button type="button" label="Save" @click="saveEditHome" :loading="editing"></Button>
+      </div>
+    </Dialog>
+
+    <Menu ref="menu" :model="menuItems" :popup="true" />
+    <ConfirmDialog />
   </AppLayout>
 </template>

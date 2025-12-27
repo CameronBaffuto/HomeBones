@@ -11,6 +11,9 @@ import {
   serverTimestamp,
   orderBy,
   Timestamp,
+  doc,
+  deleteDoc,
+  updateDoc
 } from "firebase/firestore";
 
 export interface ItemField {
@@ -90,5 +93,32 @@ export const useItemStore = defineStore("items", () => {
     }
   };
 
-  return { items, loading, error, fetchItems, createItem };
+  const updateItem = async (itemId: string, data: Partial<Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'ownerId' | 'homeId' | 'roomId'>>) => {
+      if (!session.uid) return;
+      const idx = items.value.findIndex(i => i.id === itemId);
+      if (idx !== -1) {
+          items.value[idx] = { ...items.value[idx], ...data };
+      }
+      
+      const docRef = doc(db, "items", itemId);
+      updateDoc(docRef, {
+          ...data,
+          updatedAt: Timestamp.now()
+      }).catch(err => {
+          console.error("Failed to update item:", err);
+          error.value = "Failed to update item";
+      });
+  };
+
+  const deleteItem = async (itemId: string) => {
+      if (!session.uid) return;
+      items.value = items.value.filter(i => i.id !== itemId);
+      const docRef = doc(db, "items", itemId);
+      deleteDoc(docRef).catch(err => {
+          console.error("Failed to delete item:", err);
+          error.value = "Failed to delete item";
+      });
+  };
+
+  return { items, loading, error, fetchItems, createItem, updateItem, deleteItem };
 });

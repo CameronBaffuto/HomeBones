@@ -4,6 +4,7 @@ import App from './App.vue'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config';
 import ToastService from 'primevue/toastservice';
+import ConfirmationService from 'primevue/confirmationservice';
 import { definePreset } from '@primeuix/themes';
 import Nora from '@primeuix/themes/nora';
 import 'primeicons/primeicons.css'; 
@@ -42,6 +43,7 @@ app.use(PrimeVue, {
 });
 
 app.use(ToastService);
+app.use(ConfirmationService);
 app.use(pinia)
 app.use(router)
 useSessionStore(pinia).init();

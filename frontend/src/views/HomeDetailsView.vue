@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AppLayout from "@/views/AppLayout.vue";
 import { useHomesStore } from "@/stores/useHomeStore";
@@ -8,6 +8,7 @@ import { useModalStore } from "@/stores/useModalStore";
 import CreateRoomDialog from "@/modals/CreateRoomDialog.vue";
 import EditRoomDialog from "@/modals/EditRoomDialog.vue";
 import Button from "primevue/button";
+import Breadcrumb from "primevue/breadcrumb";
 import Card from "primevue/card";
 import Menu from "primevue/menu";
 import ConfirmDialog from "primevue/confirmdialog";
@@ -65,6 +66,18 @@ onMounted(async () => {
         }
     }
 });
+
+const breadcrumbHome = computed(() => ({
+    icon: "pi pi-home",
+    route: { name: "home" }
+}));
+
+const breadcrumbItems = computed(() => ([
+    {
+        label: homesStore.currentHome?.name ?? "Home",
+        route: { name: "home-details", params: { homeId } }
+    }
+]));
 
 const openCreateRoomDialog = () => {
     newRoomName.value = "";
@@ -150,21 +163,31 @@ const goToRoom = (roomId: string) => {
 
       <div v-else>
           <div class="mb-4">
-              <Button 
-                label="Back to Dashboard" 
-                icon="pi pi-arrow-left" 
-                text 
-                size="small" 
-                class="p-0 text-surface-500 hover:text-primary-600" 
-                @click="router.push({ name: 'home' })" 
-              />
+              <Breadcrumb :home="breadcrumbHome" :model="breadcrumbItems"
+              :pt="{
+                root: {
+                    class: 'bg-transparent! text-sm p-0 m-0'
+                },
+              }">
+                  <template #item="{ item, props }">
+                      <router-link v-if="item.route" v-slot="{ href, navigate }" :to="item.route" custom>
+                          <a :href="href" v-bind="props.action" @click="navigate">
+                              <span v-if="item.icon" :class="[item.icon, 'text-color']" />
+                              <span class="text-surface-600">{{ item.label }}</span>
+                          </a>
+                      </router-link>
+                      <span v-else v-bind="props.action" class="text-surface-700 dark:text-surface-0">
+                          {{ item.label }}
+                      </span>
+                  </template>
+              </Breadcrumb>
           </div>
           <div class="flex items-center justify-between mb-6">
               <div>
                   <h1 class="text-2xl font-bold text-surface-900">{{ homesStore.currentHome.name }}</h1>
                   <p class="text-surface-600 text-sm">Manage your rooms and items</p>
               </div>
-              <Button label="New Room" icon="pi pi-plus" @click="openCreateRoomDialog" />
+              <Button icon="pi pi-plus" rounded @click="openCreateRoomDialog" />
           </div>
 
           <!-- Rooms List -->

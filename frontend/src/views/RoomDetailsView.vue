@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import AppLayout from "@/views/AppLayout.vue";
 import { useHomesStore } from "@/stores/useHomeStore";
 import { useRoomStore } from "@/stores/useRoomStore";
@@ -9,6 +9,7 @@ import { useModalStore } from "@/stores/useModalStore";
 import ItemDialog from "@/modals/ItemDialog.vue";
 
 import Button from "primevue/button";
+import Breadcrumb from "primevue/breadcrumb";
 import Card from "primevue/card";
 import Menu from "primevue/menu";
 import ConfirmDialog from "primevue/confirmdialog";
@@ -17,7 +18,6 @@ import { useToast } from "primevue/usetoast";
 import Tag from "primevue/tag";
 
 const route = useRoute();
-const router = useRouter();
 const homesStore = useHomesStore();
 const roomStore = useRoomStore();
 const itemStore = useItemStore();
@@ -38,13 +38,25 @@ const homeId = computed(() => {
     return roomStore.rooms.find(r => r.id === roomId)?.homeId;
 });
 
-const goBack = () => {
+const breadcrumbHome = computed(() => ({
+    icon: "pi pi-home",
+    route: { name: "home" }
+}));
+
+const breadcrumbItems = computed(() => {
+    const items = [];
+    const homeLabel = homesStore.currentHome?.name ?? "Home";
     if (homeId.value) {
-        router.push({ name: 'home-details', params: { homeId: homeId.value } });
+        items.push({
+            label: homeLabel,
+            route: { name: "home-details", params: { homeId: homeId.value } }
+        });
     } else {
-        router.push({ name: 'home' });
+        items.push({ label: homeLabel });
     }
-};
+    items.push({ label: roomName.value });
+    return items;
+});
 
 // Item Form State
 const isEditing = ref(false);
@@ -189,25 +201,33 @@ const confirmDeleteItem = (item: Item) => {
 
 <template>
   <AppLayout>
+    <div class="mb-2">
+        <Breadcrumb :home="breadcrumbHome" :model="breadcrumbItems"
+        :pt="{
+            root: {
+                class: 'bg-transparent! text-sm p-0 m-0'
+            },
+        }">
+            <template #item="{ item, props }">
+                <router-link v-if="item.route" v-slot="{ href, navigate }" :to="item.route" custom>
+                    <a :href="href" v-bind="props.action" @click="navigate">
+                        <span v-if="item.icon" :class="[item.icon, 'text-color']" />
+                        <span class="text-surface-600">{{ item.label }}</span>
+                    </a>
+                </router-link>
+                <span v-else v-bind="props.action" class="text-surface-700 dark:text-surface-0">
+                    {{ item.label }}
+                </span>
+            </template>
+        </Breadcrumb>
+    </div>
     <div class="space-y-6 w-full max-w-4xl mx-auto p-4">
-        
-        <div class="mb-2">
-            <Button 
-                label="Back to Home" 
-                icon="pi pi-arrow-left" 
-                text 
-                size="small" 
-                class="p-0 text-surface-500 hover:text-primary-600" 
-                @click="goBack" 
-            />
-        </div>
-
         <div class="flex items-center justify-between">
              <div>
                   <h1 class="text-2xl font-bold text-surface-900">{{ roomName }}</h1>
                   <p class="text-surface-600 text-sm">Items in this room</p>
               </div>
-              <Button label="New Item" icon="pi pi-plus" @click="openCreateItemDialog" />
+              <Button icon="pi pi-plus" rounded @click="openCreateItemDialog" />
         </div>
 
         <div v-if="itemStore.loading" class="text-center py-8">

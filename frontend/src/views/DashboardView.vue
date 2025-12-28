@@ -136,7 +136,7 @@ const confirmDeleteHome = (home: Home) => {
     <div class="space-y-6 w-full max-w-4xl mx-auto p-4">
       <div class="flex items-center justify-between">
         <h1 class="text-2xl font-bold text-surface-900">My Homes</h1>
-        <Button label="New Home" icon="pi pi-plus" @click="openCreateDialog" />
+        <Button icon="pi pi-plus" rounded @click="openCreateDialog" />
       </div>
 
       <div v-if="homesStore.loading" class="text-center py-8">

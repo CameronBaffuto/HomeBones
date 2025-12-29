@@ -116,11 +116,11 @@ const headerTitle = computed(() => form.value.title.trim() || "Item");
 
 <template>
   <Drawer
-  v-if="showEditor && isMobile"
-  v-model:visible="visible"
-  position="bottom"
+    v-if="showEditor && isMobile"
+    v-model:visible="visible"
+    position="bottom"
     :closable="false"
-    :style="{ height: '85vh' }"
+    :style="{ height: '70vh' }"
   >
     <template #header>
       <div class="flex w-full items-center justify-between gap-2">

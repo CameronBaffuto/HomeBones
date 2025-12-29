@@ -246,10 +246,9 @@ const goToItem = (itemId: string) => {
             </Breadcrumb>
         </div>
         <div class="flex items-center justify-between">
-             <div>
-                  <h1 class="text-2xl font-bold text-surface-900">{{ roomName }}</h1>
-                  <p class="text-surface-600 text-sm">Items in this room</p>
-              </div>
+            <div>
+                <h1 class="text-2xl font-bold text-surface-900">{{ roomName }}</h1>
+            </div>
               <Button icon="pi pi-plus" rounded @click="openCreateItemDialog" />
         </div>
 

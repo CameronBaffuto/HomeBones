@@ -3,6 +3,7 @@ import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useSessionStore } from "@/stores/useSessionStore";
 import { useThemeStore } from "@/stores/useThemeStore";
+import HomeBonesLogo from "@/assets/HB.png";
 
 import Button from "primevue/button";
 import Drawer from "primevue/drawer";
@@ -43,7 +44,7 @@ const logout = async () => {
     <div class="flex items-center justify-between px-3 py-3">
       <div class="flex items-center gap-2 cursor-pointer" @click="go('home')">
         <slot name="logo">
-          <i class="pi pi-home text-lg"></i>
+          <img :src="HomeBonesLogo" alt="HomeBones Logo" class="w-10 h-10" />
           <span class="text-base font-semibold">HomeBones</span>
         </slot>
       </div>

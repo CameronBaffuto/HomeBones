@@ -4,6 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import AppLayout from "@/views/AppLayout.vue";
 import { useHomesStore } from "@/stores/useHomeStore";
 import { useRoomStore, type Room } from "@/stores/useRoomStore";
+import { useItemStore } from "@/stores/useItemStore";
 import { useModalStore } from "@/stores/useModalStore";
 import CreateRoomDialog from "@/modals/CreateRoomDialog.vue";
 import EditRoomDialog from "@/modals/EditRoomDialog.vue";
@@ -19,6 +20,7 @@ const route = useRoute();
 const router = useRouter();
 const homesStore = useHomesStore();
 const roomStore = useRoomStore();
+const itemStore = useItemStore();
 const modalStore = useModalStore();
 const confirm = useConfirm();
 const toast = useToast();
@@ -63,9 +65,16 @@ onMounted(async () => {
         await homesStore.selectHome(homeId);
         if (homesStore.currentHome) {
             roomStore.fetchRooms(homeId);
+            roomStore.rooms.forEach(room => {
+                itemStore.fetchItems(room.id);
+            });
         }
     }
 });
+
+const roomItemCount = (roomId: string) => {
+    return itemStore.items.filter(item => item.roomId === roomId).length;
+};
 
 const breadcrumbHome = computed(() => ({
     icon: "pi pi-home",
@@ -210,8 +219,7 @@ const goToRoom = (roomId: string) => {
                   <template #title>
                       <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2 overflow-hidden">
-                            <i class="pi pi-box text-surface-500"></i>
-                            <span class="truncate">{{ room.name }}</span>
+                            <span>{{ room.name }}</span>
                         </div>
                         <Button 
                             icon="pi pi-ellipsis-v" 
@@ -224,8 +232,7 @@ const goToRoom = (roomId: string) => {
                       </div>
                   </template>
                   <template #content>
-                      <!-- Future: Item count or summary -->
-                      <span class="text-xs text-surface-400">Tap to view items</span>
+                      <span class="text-xs text-surface-500">{{ roomItemCount(room.id) }} items</span>
                   </template>
               </Card>
           </div>

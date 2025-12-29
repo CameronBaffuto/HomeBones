@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import AppLayout from "@/views/AppLayout.vue";
 import { useHomesStore } from "@/stores/useHomeStore";
 import { useRoomStore } from "@/stores/useRoomStore";
 import { useItemStore, type Item, type ItemField } from "@/stores/useItemStore";
 import { useModalStore } from "@/stores/useModalStore";
-import ItemDialog from "@/modals/ItemDialog.vue";
+import ItemEditorDrawer from "@/modals/ItemEditorDrawer.vue";
 
 import Button from "primevue/button";
 import Breadcrumb from "primevue/breadcrumb";
@@ -15,10 +15,10 @@ import Menu from "primevue/menu";
 import ConfirmDialog from "primevue/confirmdialog";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
-import Tag from "primevue/tag";
 
 const route = useRoute();
 const homesStore = useHomesStore();
+const router = useRouter();
 const roomStore = useRoomStore();
 const itemStore = useItemStore();
 const modalStore = useModalStore();
@@ -118,25 +118,25 @@ const openEditItemDialog = (item: Item) => {
     modalStore.open("item");
 };
 
-const addField = () => {
-    itemForm.value.fields.push({ key: "", value: "" });
-};
-
-const removeField = (index: number) => {
-    itemForm.value.fields.splice(index, 1);
-};
+const isEmptyRow = (field: ItemField) => !field.key.trim() && !field.value.trim();
 
 const saveItem = async () => {
     if (!itemForm.value.title.trim()) return;
+    if (itemForm.value.fields.some(field => isEmptyRow(field))) return;
     
     // Filter empty fields
-    const fieldsToSave = itemForm.value.fields.filter(f => f.key.trim() || f.value.trim());
+    const fieldsToSave = itemForm.value.fields
+        .filter(field => field.key.trim() || field.value.trim())
+        .map(field => ({
+            key: field.key.trim(),
+            value: field.value.trim()
+        }));
 
     savingItem.value = true;
     try {
         if (isEditing.value) {
             await itemStore.updateItem(itemForm.value.id, {
-                title: itemForm.value.title,
+                title: itemForm.value.title.trim(),
                 type: itemForm.value.type,
                 fields: fieldsToSave
             });
@@ -156,7 +156,7 @@ const saveItem = async () => {
             await itemStore.createItem(
                 homeId,
                 roomId,
-                itemForm.value.title,
+                itemForm.value.title.trim(),
                 fieldsToSave,
                 itemForm.value.type
             );
@@ -197,31 +197,54 @@ const confirmDeleteItem = (item: Item) => {
     });
 };
 
+const detailPreview = (item: Item) => {
+    const previewFields = item.fields
+        .filter(field => field.key.trim() || field.value.trim())
+        .slice(0, 2);
+
+    if (previewFields.length === 0) {
+        return "No details yet";
+    }
+
+    return previewFields
+        .map(field => {
+            const label = field.key.trim();
+            const value = field.value.trim();
+            if (label && value) return `${label}: ${value}`;
+            return label || value;
+        })
+        .join(" \u00b7 ");
+};
+
+const goToItem = (itemId: string) => {
+    router.push({ name: "item-details", params: { roomId, itemId } });
+};
+
 </script>
 
 <template>
   <AppLayout>
-    <div class="mb-2">
-        <Breadcrumb :home="breadcrumbHome" :model="breadcrumbItems"
-        :pt="{
-            root: {
-                class: 'bg-transparent! text-sm p-0 m-0'
-            },
-        }">
-            <template #item="{ item, props }">
-                <router-link v-if="item.route" v-slot="{ href, navigate }" :to="item.route" custom>
-                    <a :href="href" v-bind="props.action" @click="navigate">
-                        <span v-if="item.icon" :class="[item.icon, 'text-color']" />
-                        <span class="text-surface-600">{{ item.label }}</span>
-                    </a>
-                </router-link>
-                <span v-else v-bind="props.action" class="text-surface-700 dark:text-surface-0">
-                    {{ item.label }}
-                </span>
-            </template>
-        </Breadcrumb>
-    </div>
     <div class="space-y-6 w-full max-w-4xl mx-auto p-4">
+        <div class="mb-2">
+            <Breadcrumb :home="breadcrumbHome" :model="breadcrumbItems" 
+            :pt="{
+                root: {
+                    class: 'bg-transparent! text-sm p-0 m-0'
+                },
+            }">
+                <template #item="{ item, props }">
+                    <router-link v-if="item.route" v-slot="{ href, navigate }" :to="item.route" custom>
+                        <a :href="href" v-bind="props.action" @click="navigate">
+                            <span v-if="item.icon" :class="[item.icon, 'text-color']" />
+                            <span class="text-surface-600">{{ item.label }}</span>
+                        </a>
+                    </router-link>
+                    <span v-else v-bind="props.action" class="text-surface-700 dark:text-surface-0">
+                        {{ item.label }}
+                    </span>
+                </template>
+            </Breadcrumb>
+        </div>
         <div class="flex items-center justify-between">
              <div>
                   <h1 class="text-2xl font-bold text-surface-900">{{ roomName }}</h1>
@@ -240,31 +263,29 @@ const confirmDeleteItem = (item: Item) => {
         </div>
 
         <div v-else class="flex flex-col gap-4">
-            <Card v-for="item in itemStore.items" :key="item.id" class="border border-surface-200 shadow-none relative group">
+            <Card
+                v-for="item in itemStore.items"
+                :key="item.id"
+                class="border border-surface-200 shadow-none relative group cursor-pointer"
+                @click="goToItem(item.id)"
+            >
                 <template #content>
-                    <div class="flex justify-between items-start">
+                    <div class="flex justify-between items-start gap-3">
                         <div class="space-y-2 w-full">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <span class="font-semibold text-lg">{{ item.title }}</span>
-                                    <Tag v-if="item.type" :value="item.type" severity="secondary" class="text-xs" />
-                                </div>
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="font-semibold text-lg">{{ item.title }}</span>
                                 <Button 
                                     icon="pi pi-ellipsis-v" 
                                     text 
                                     rounded 
                                     severity="secondary" 
                                     class="opacity-0 group-hover:opacity-100 transition-opacity" 
-                                    @click="toggleMenu($event, item)" 
+                                    @click.stop="toggleMenu($event, item)" 
                                 />
                             </div>
-
-                            <div v-if="item.fields.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 mt-2">
-                                <div v-for="(field, idx) in item.fields" :key="idx" class="text-sm border-b border-surface-100 last:border-0 pb-1">
-                                    <span class="text-surface-500 mr-2">{{ field.key }}:</span>
-                                    <span class="text-surface-900">{{ field.value }}</span>
-                                </div>
-                            </div>
+                            <p class="text-sm text-surface-600">
+                                {{ detailPreview(item) }}
+                            </p>
                         </div>
                     </div>
                 </template>
@@ -272,13 +293,11 @@ const confirmDeleteItem = (item: Item) => {
         </div>
     </div>
 
-    <ItemDialog
+    <ItemEditorDrawer
       v-model:visible="modalStore.item"
       v-model:form="itemForm"
       :is-editing="isEditing"
       :saving="savingItem"
-      @add-field="addField"
-      @remove-field="removeField"
       @save="saveItem"
     />
     

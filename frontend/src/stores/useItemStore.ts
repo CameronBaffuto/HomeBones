@@ -11,6 +11,7 @@ import {
   orderBy,
   Timestamp,
   doc,
+  getDoc,
   deleteDoc,
   updateDoc
 } from "firebase/firestore";
@@ -111,6 +112,32 @@ export const useItemStore = defineStore("items", () => {
     }
   };
 
+  const fetchItem = async (itemId: string) => {
+    if (!session.uid) return;
+    loading.value = true;
+    error.value = null;
+    try {
+      const docRef = doc(db, "items", itemId);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const item = { id: snap.id, ...snap.data() } as Item;
+        const idx = items.value.findIndex(i => i.id === itemId);
+        if (idx === -1) {
+          items.value.unshift(item);
+        } else {
+          items.value[idx] = item;
+        }
+      } else {
+        error.value = "Item not found";
+      }
+    } catch (e: any) {
+      console.error("fetchItem error", e);
+      error.value = e.message;
+    } finally {
+      loading.value = false;
+    }
+  };
+
   const updateItem = async (itemId: string, data: Partial<Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'ownerId' | 'homeId' | 'roomId'>>) => {
       if (!session.uid) return;
       const idx = items.value.findIndex(i => i.id === itemId);
@@ -138,5 +165,5 @@ export const useItemStore = defineStore("items", () => {
       });
   };
 
-  return { items, loading, error, fetchItems, createItem, updateItem, deleteItem };
+  return { items, loading, error, fetchItems, fetchItem, createItem, updateItem, deleteItem };
 });

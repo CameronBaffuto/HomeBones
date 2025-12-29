@@ -6,7 +6,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import HomeBonesLogo from "@/assets/HB.png";
 
 import Button from "primevue/button";
-import Drawer from "primevue/drawer";
+import Menu from "primevue/menu";
 import Avatar from "primevue/avatar";
 import SelectButton from "primevue/selectbutton";
 
@@ -14,7 +14,7 @@ const session = useSessionStore();
 const theme = useThemeStore();
 const router = useRouter();
 
-const menuOpen = ref(false);
+const menu = ref();
 
 const themeOptions = [
   { value: "system", icon: "pi pi-desktop" },
@@ -27,16 +27,39 @@ const avatarLabel = computed(() =>
   email.value ? email.value.charAt(0).toUpperCase() : "?"
 );
 
+const menuItems = ref([
+  {
+    label: "Navigation",
+    items: [
+      {
+        label: "Dashboard",
+        icon: "pi pi-th-large",
+        command: () => go("home")
+      }
+    ]
+  }
+]);
+
+const toggleMenu = (event: Event) => {
+  menu.value?.toggle(event);
+};
+
+const closeMenu = () => {
+  menu.value?.hide?.();
+};
+
 const go = (name: string) => {
-  menuOpen.value = false;
+  closeMenu();
   router.push({ name });
 };
 
 const logout = async () => {
-  menuOpen.value = false;
+  closeMenu();
   await session.logout();
   router.replace({ name: "login" });
 };
+
+const currentYear = new Date().getFullYear();
 </script>
 
 <template>
@@ -53,81 +76,62 @@ const logout = async () => {
         icon="pi pi-bars"
         text
         rounded
-        @click="menuOpen = true"
+        @click="toggleMenu"
       />
     </div>
   </header>
 
-  <Drawer
-    v-model:visible="menuOpen"
-    position="right"
-    class="w-[88vw] max-w-sm"
-    :showCloseIcon="false"
-  >
-    <template #header>
-      <div class="flex w-full items-center justify-between px-1">
-        <div class="flex items-center gap-2">
-          <i class="pi pi-lightbulb"></i>
-          <span class="font-semibold">HomeBones</span>
-        </div>
-        <Button
-          icon="pi pi-times"
-          text
-          rounded
-          @click="menuOpen = false"
-        />
+  <Menu ref="menu" :model="menuItems" :popup="true" class="w-72">
+    <template #start>
+      <div class="flex items-center gap-2 px-2 py-2">
+        <img :src="HomeBonesLogo" alt="HomeBones Logo" class="h-8 w-8" />
+        <span class="text-lg font-semibold">HomeBones</span>
       </div>
     </template>
-
-    <div class="flex h-full flex-col">
-      <nav class="mt-2 flex flex-col gap-1">
-        <Button
-          label="Dashboard"
-          icon="pi pi-th-large"
-          text
-          class="justify-start"
-          @click="go('home')"
-        />
-      </nav>
-
-        <div class="mt-auto pt-4">
-            <div class="flex items-center justify-between py-2">
-                <span class="text-sm text-surface-600">Theme</span>
-
-                <SelectButton
-                    :modelValue="theme.mode"
-                    :options="themeOptions"
-                    optionLabel="value"
-                    optionValue="value"
-                    dataKey="value"
-                    @update:modelValue="theme.setMode"
-                >
-                    <template #option="{ option }">
-                    <i :class="option.icon" class="text-sm" />
-                    </template>
-                </SelectButton>
-            </div>
-            <div class="flex items-center justify-between rounded-xl bg-surface-50 px-3 py-3">
-                <div class="flex items-center gap-3 min-w-0">
-                <Avatar :label="avatarLabel" shape="circle" />
-                <div class="min-w-0">
-                    <p class="text-xs text-surface-500">Signed in as</p>
-                    <p class="text-sm font-medium truncate">
-                    {{ email || "Account" }}
-                    </p>
-                </div>
-                </div>
-
-                <Button
-                v-if="session.isAuthed"
-                icon="pi pi-sign-out"
-                text
-                rounded
-                severity="danger"
-                @click="logout"
-                />
-            </div>
+    <template #item="{ item, props }">
+      <a class="flex items-center gap-2" v-bind="props.action">
+        <span :class="item.icon"></span>
+        <span>{{ item.label }}</span>
+      </a>
+    </template>
+    <template #end>
+      <div class="flex flex-col gap-3 px-2 pb-2">
+        <div class="flex items-center justify-between">
+          <span class="text-bold text-lg text-surface-600">Theme</span>
+          <SelectButton
+            :modelValue="theme.mode"
+            :options="themeOptions"
+            optionLabel="value"
+            optionValue="value"
+            dataKey="value"
+            @update:modelValue="theme.setMode"
+          >
+            <template #option="{ option }">
+              <i :class="option.icon" class="text-sm" />
+            </template>
+          </SelectButton>
         </div>
-    </div>    
-  </Drawer>
+        <div class="flex items-center justify-between rounded-xl bg-surface-50 px-3 py-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <Avatar :label="avatarLabel" shape="circle" />
+            <div class="min-w-0">
+              <p class="text-xs text-surface-500">Signed in as</p>
+              <p class="text-sm font-medium truncate">
+                {{ email || "Account" }}
+              </p>
+            </div>
+          </div>
+          <Button
+            v-if="session.isAuthed"
+            icon="pi pi-sign-out"
+            text
+            rounded
+            severity="danger"
+            @click="logout"
+          />
+        </div>
+        <p class="flex justify-center text-xs text-surface-400">&copy; {{ currentYear }} <a href="https://junipra.com" target="_blank" class="text-purple-400 ml-1">Junipra Web Services</a></p>
+      </div>
+    </template>
+  </Menu>
 </template>
